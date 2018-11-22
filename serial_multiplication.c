@@ -74,6 +74,25 @@ int sort_array(long* a, int oldsize ){
     printf("\n old size %d\n",oldsize);
     //sorted
     int newsize=oldsize;
+//    long current = a[0];
+//    long previous = 0;
+//    for (int i=0; i<newsize; i++){
+//        current = a[i];
+//        if (current == previous){
+//            remove_element(a,i,newsize);
+//            newsize--;
+//            i--;
+//        }
+//        previous = current;
+//    }
+
+    newsize=find_dups(oldsize,a);
+
+    return newsize;
+}
+
+int find_dups(int oldsize, long *a) {
+    int newsize=oldsize;
     long current = a[0];
     long previous = 0;
     for (int i=0; i<newsize; i++){
@@ -96,8 +115,6 @@ void serial_merge(long *a, long *b, long **c, long size_a, long size_b) {
     long a_i;
     long n2 = size_a + size_b;
 
-    printf("doing serial merge\n");
-
     *c=malloc(sizeof(long)*n2);
     while (k < n2 && i < size_a && j < size_b) {
         a_i = a[i];
@@ -115,14 +132,14 @@ void serial_merge(long *a, long *b, long **c, long size_a, long size_b) {
         for (; j < size_b; j++) {
             b_j = b[j];
             (*c)[k] = b_j;
-            j++;
+//j++;
             k++;
         }
     } else if (j >= size_b) {
         for (; i < size_a; i++) {
             a_i = a[i];
             (*c)[k] = a_i;
-            i++;
+            //i++;
             k++;
         }
     }
@@ -162,7 +179,7 @@ int main(void) {
         printf("%d ",(int) buffer[i]);
     }
 
-    printf("\n new size %d\n",newsize);
+    printf("\nnew size %d\n",newsize);
 
     long buffer1[50];
     int newsize1 = get_array(52, size, &buffer1[0]);
@@ -171,17 +188,29 @@ int main(void) {
         printf("%d ",(int) buffer1[i]);
     }
 
-    printf("\n new size %d\n",newsize1);
-
-    printf("\n printing combined\n");
+    printf("\nnew size %d\n",newsize1);
 
     //long *buffer2;
     //*buffer2 = malloc(sizeof(long)*(newsize+newsize1));
-    long buffer2[86];
+    long *buffer2[86];
     serial_merge(&buffer[0],&buffer1[0],&buffer2[0],newsize,newsize1);
 
-    for (int i=0;i<(newsize+newsize1);i++){
-        printf("%d\n ",(int) buffer2[i]);
+    printf("\nserial merge 86\n");
+
+    int newsize2;
+
+    newsize2 = newsize+newsize1;
+
+    for (int i=0;i<newsize2;i++){
+        printf("%d ",(int)(*buffer2)[i]);
+    }
+
+    newsize2=find_dups(newsize2,*buffer2);
+
+    printf("\nremoved duplicates %d\n",newsize2);
+
+    for (int i=0;i<newsize2;i++){
+        printf("%d ",(int)(*buffer2)[i]);
     }
 
     return 0;
