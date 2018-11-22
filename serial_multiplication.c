@@ -1,9 +1,6 @@
 #include <stdio.h>
 #include <math.h>
-/*
-i = floor ( sqrt(index*2)+1/2)
-j = index - (i*i-i)/2
-*/
+
 
 //used https://stackoverflow.com/questions/15821123/removing-elements-from-an-array-in-c
 //as reference for 
@@ -71,6 +68,10 @@ void radixSort(long * array, int size){
 
 int sort_array(long* a, int oldsize ){
     radixSort(a, oldsize);
+    for (int i=0;i<oldsize;i++){
+        printf("%d ",(int) a[i]);
+    }
+       printf("\n old size %d\n",oldsize);
     //sorted
     int newsize=oldsize;
     long current = a[0];
@@ -86,13 +87,18 @@ int sort_array(long* a, int oldsize ){
     return newsize;
 }
 
+
+/*
+i = floor ( sqrt(index*2)+1/2)
+j = index - (i*i-i)/2
+*/
 int get_array(int start, int size, long* buffer){
     int newsize = 0;
     int end = start + size;
     int i,j;
     long temp[size];
     for (int index=start; index<end; index++){
-        int ind=index-1;
+        int ind=index+1;
         i = floor(sqrt(ind * 2) + 0.5);
         j = ind - (i * i - i) / 2;
         temp[index-start]= i * j;
@@ -109,9 +115,10 @@ int main(void) {
     int size = 50;
     long buffer[50];
     int newsize = get_array(0, size, &buffer[0]);
-    printf("the number of unique numbers in first %d elements of upper triangular of multiplication table is %d\n", size, newsize);
+   // printf("the number of unique numbers in first %d elements of upper triangular of multiplication table is %d\n", size, newsize);
     for (int i=0;i<newsize;i++){
         printf("%d ",(int) buffer[i]);
     }
+    printf("\n new size %d\n",newsize);
   return 0;
 }
