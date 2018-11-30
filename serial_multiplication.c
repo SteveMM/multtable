@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <math.h>
+#include <mpi.h>
 #include <stdlib.h>
 
 //used https://stackoverflow.com/questions/15821123/removing-elements-from-an-array-in-c
@@ -9,7 +10,6 @@ void remove_element(long *array, int index, int array_length)
     int i;
     for(i = index; i < array_length - 1; i++) array[i] = array[i + 1];
 }
-
 
 // Radix Sort
 //https://austingwalters.com/radix-sort-in-c/
@@ -66,31 +66,6 @@ void radixSort(long * array, int size){
     }
 }
 
-int sort_array(long* a, int oldsize ){
-    radixSort(a, oldsize);
-    for (int i=0;i<oldsize;i++){
-        printf("%d ",(int) a[i]);
-    }
-    printf("\n old size %d\n",oldsize);
-    //sorted
-    int newsize=oldsize;
-//    long current = a[0];
-//    long previous = 0;
-//    for (int i=0; i<newsize; i++){
-//        current = a[i];
-//        if (current == previous){
-//            remove_element(a,i,newsize);
-//            newsize--;
-//            i--;
-//        }
-//        previous = current;
-//    }
-
-    newsize=find_dups(oldsize,a);
-
-    return newsize;
-}
-
 int find_dups(int oldsize, long *a) {
     int newsize=oldsize;
     long current = a[0];
@@ -104,6 +79,19 @@ int find_dups(int oldsize, long *a) {
         }
         previous = current;
     }
+    return newsize;
+}
+
+int sort_array(long* a, int oldsize ){
+    radixSort(a, oldsize);
+    for (int i=0;i<oldsize;i++){
+        printf("%d ",(int) a[i]);
+    }
+    printf("\n old size %d\n",oldsize);
+    //sorted
+    int newsize=oldsize;
+    newsize=find_dups(oldsize,a);
+
     return newsize;
 }
 
@@ -146,14 +134,12 @@ void serial_merge(long *a, long *b, long **c, long size_a, long size_b) {
 
 }
 
-
 /*
 i = floor ( sqrt(index*2)+1/2)
 j = index - (i*i-i)/2
 */
-int get_array(int start, int size, long* buffer){
+int get_array(long start, long end, int size, long* buffer){
     int newsize = 0;
-    int end = start + size;
     int i,j;
     long temp[size];
     for (int index=start; index<end; index++){
@@ -170,48 +156,85 @@ int get_array(int start, int size, long* buffer){
     return newsize;
 }
 
-int main(void) {
-    int size = 50;
-    long buffer[50];
-    int newsize = get_array(0, size, &buffer[0]);
-    // printf("the number of unique numbers in first %d elements of upper triangular of multiplication table is %d\n", size, newsize);
-    for (int i=0;i<newsize;i++){
-        printf("%d ",(int) buffer[i]);
+int main(int argc, char *argv[]) {
+
+    MPI_Init(&argc, &argv);
+
+    MPI_Status status;
+
+    long start, end, partition_size, num_upper_tri;
+    long *a;
+    int n, id, p;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &id);
+    MPI_Comm_size(MPI_COMM_WORLD, &p);
+
+    n = atol(argv[1]);
+
+    num_upper_tri = (n*n-n)/2+n;
+
+    // for each process, calculate their start, range, sort and remove duplicates
+    partition_size = num_upper_tri/p;
+    start = p*partition_size;
+
+    a = malloc(sizeof(long) * partition_size);
+
+    if(id == (p-1)) {
+        end = num_upper_tri;
+    } else {
+        end = start + partition_size;
     }
 
-    printf("\nnew size %d\n",newsize);
+    int newsize = get_array(start, end, partition_size, &a[0]);
 
-    long buffer1[50];
-    int newsize1 = get_array(52, size, &buffer1[0]);
-    // printf("the number of unique numbers in first %d elements of upper triangular of multiplication table is %d\n", size, newsize);
-    for (int i=0;i<newsize1;i++){
-        printf("%d ",(int) buffer1[i]);
+    // tree merge starting at the leaf
+    // process array a(process+j) merge into process a(j)
+    // if a(j) recv(a(j))
+        // receive array, sizeof(array)
+        // serial merge
+        // remove duplicates
+    // if a(process+j) send(a(process+j))
+        // send array, newsize
+
+    int height, process, proc_recv;
+    long mergesize, size2;
+    long *a2;
+    long *newa;
+
+    height = log2(p);
+
+    for (int i = 0; i < height; i++){
+         process = p / pow(2,i+1);
+        for (int j = 0; j < process; j++){
+            if(id == j){
+                proc_recv = process+j;
+                MPI_Recv(&mergesize, 1, MPI_LONG, proc_recv, 1, MPI_COMM_WORLD, &status);
+                size2 = newsize + mergesize;
+                a2 = malloc(sizeof(long) * mergesize);
+                MPI_Recv(a2, mergesize, MPI_LONG, proc_recv, 2, MPI_COMM_WORLD, &status);
+
+                // merge the 2 arrays, sort, remove duplicates
+                newa = malloc(sizeof(long) * size2);
+                serial_merge(&a[0], &a2[0], &newa, newsize, mergesize);
+                newsize=find_dups(size2,newa);
+
+                free(a);
+                a = malloc(sizeof(long) * size2);
+                for(int k = 0; k < newsize; k++){
+                    a[k] = newa[k];
+                }
+
+            }else if(id == (process+j)) {
+                MPI_Send(&newsize, 1, MPI_LONG, j, 1, MPI_COMM_WORLD);
+                MPI_Send(a, newsize, MPI_LONG, j, 2, MPI_COMM_WORLD);
+            }
+        }
     }
 
-    printf("\nnew size %d\n",newsize1);
-
-    //long *buffer2;
-    //*buffer2 = malloc(sizeof(long)*(newsize+newsize1));
-    long *buffer2[86];
-    serial_merge(&buffer[0],&buffer1[0],&buffer2[0],newsize,newsize1);
-
-    printf("\nserial merge 86\n");
-
-    int newsize2;
-
-    newsize2 = newsize+newsize1;
-
-    for (int i=0;i<newsize2;i++){
-        printf("%d ",(int)(*buffer2)[i]);
+    if(id == 0){
+        printf("M(%d) = %d", n, newsize);
     }
 
-    newsize2=find_dups(newsize2,*buffer2);
-
-    printf("\nremoved duplicates %d\n",newsize2);
-
-    for (int i=0;i<newsize2;i++){
-        printf("%d ",(int)(*buffer2)[i]);
-    }
-
+    MPI_Finalize();
     return 0;
 }
