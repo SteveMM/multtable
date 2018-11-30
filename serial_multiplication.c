@@ -84,10 +84,12 @@ int find_dups(int oldsize, long *a) {
 
 int sort_array(long* a, int oldsize ){
     radixSort(a, oldsize);
-    for (int i=0;i<oldsize;i++){
-        printf("%d ",(int) a[i]);
-    }
-    printf("\n old size %d\n",oldsize);
+    
+//    for (int i=0;i<oldsize;i++){
+//        printf("%d ",(int) a[i]);
+//    }
+//    printf("\n old size %d\n",oldsize);
+    
     //sorted
     int newsize=oldsize;
     newsize=find_dups(oldsize,a);
@@ -164,12 +166,12 @@ int main(int argc, char *argv[]) {
 
     long start, end, partition_size, num_upper_tri;
     long *a;
-    int n, id, p;
+    int id, p;
 
     MPI_Comm_rank(MPI_COMM_WORLD, &id);
     MPI_Comm_size(MPI_COMM_WORLD, &p);
 
-    n = atol(argv[1]);
+    long n = atol(argv[1]);
 
     num_upper_tri = (n*n-n)/2+n;
 
@@ -187,6 +189,7 @@ int main(int argc, char *argv[]) {
 
     int newsize = get_array(start, end, partition_size, &a[0]);
 
+    printf("Process %d has array\n", id);
     // tree merge starting at the leaf
     // process array a(process+j) merge into process a(j)
     // if a(j) recv(a(j))
@@ -203,9 +206,12 @@ int main(int argc, char *argv[]) {
 
     height = log2(p);
 
+    MPI_Barrier(MPI_COMM_WORLD);
+
     for (int i = 0; i < height; i++){
          process = p / pow(2,i+1);
         for (int j = 0; j < process; j++){
+            printf("Process %d merges into process %d\n", process+j, j);
             if(id == j){
                 proc_recv = process+j;
                 MPI_Recv(&mergesize, 1, MPI_LONG, proc_recv, 1, MPI_COMM_WORLD, &status);
