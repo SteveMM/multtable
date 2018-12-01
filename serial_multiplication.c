@@ -86,7 +86,7 @@ int serial_merge_no_dup(long *a, long *b, long *c, long size_a, long size_b) {
 i = floor ( sqrt(index*2)+1/2)
 j = index - (i*i-i)/2
 */
-int get_array(long start, long end, long* buffer){
+int get_array(long start, long end, long** buffer){
     
     
   
@@ -154,16 +154,13 @@ int get_array(long start, long end, long* buffer){
    
     newsize = end - start;
     
+
+   
+    *buffer = temp;
+    free (otemp);
+    
     
 
-    for (int i=0; i<newsize;i++){
-        buffer[i]=temp[i];
-    }
-    
-    
-    free (temp1);
-    free (temp2);
-    
     
     return newsize;
 }
@@ -202,10 +199,9 @@ int main(int argc, char *argv[]) {
     
     long newsize = end-start;
     
-    a = malloc(sizeof(long) * newsize);
-
+   
     
-    newsize = get_array(start, end, a);
+    newsize = get_array(start, end, &a);
 
     
     
@@ -275,6 +271,8 @@ int main(int argc, char *argv[]) {
         printf("M(%d) = %d", n, newsize);
     }
 
+    free (a);
+    
     MPI_Finalize();
     return 0;
 }
