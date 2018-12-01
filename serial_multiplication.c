@@ -27,19 +27,19 @@ int serial_merge_no_dup(long *a, long *b, long *c, long size_a, long size_b) {
 
     
     while (k < size_c && i < size_a && j < size_b) {
-        a_i = a[i];
-        b_j = b[j];
+        a_i = *(a+i);
+        b_j = *(b+j);
         if (a_i <= b_j) {
-            c[k] = a_i;
+            *(c+k) = a_i;
             i++;
         } else if (a_i > b_j){
-            c[k] = b_j;
+            *(c+k) = b_j;
             j++;
         }
         
         
         if (k >0){
-            if (c[k] == c[k-1]){
+            if ( * (c+k) == *(c+k-1)){
                 k--;
                 size_c--;
                 duplicates++;
@@ -51,10 +51,10 @@ int serial_merge_no_dup(long *a, long *b, long *c, long size_a, long size_b) {
     }
     if (i >= size_a) {
         for (; j < size_b; j++) {
-            b_j = b[j];
-            c[k] = b_j;
+            b_j = *(b+j);
+            *(c+k) = b_j;
             if (k >0){
-                if (c[k] == c[k-1]){
+                if (*(c+k) == *(c+k-1)){
                     k--;
                     size_c--;
                     duplicates++;
@@ -64,10 +64,10 @@ int serial_merge_no_dup(long *a, long *b, long *c, long size_a, long size_b) {
         }
     } else if (j >= size_b) {
         for (; i < size_a; i++) {
-            a_i = a[i];
-            c[k] = a_i;
+            a_i = *(a+i);
+            *(c+k) = a_i;
             if (k >0){
-                if (c[k] == c[k-1]){
+                if (*(c+k) == *(c+k-1)){
                     k--;
                     size_c--;
                     duplicates++;
@@ -112,7 +112,7 @@ int get_array(long start, long end, long** buffer){
     
     
     for (int index = start; index < end; index++){
-        temp[index-start]= row * col;
+         * (temp+index-start)= row * col;
         row++;
         if (row > col){
             row = 1;
