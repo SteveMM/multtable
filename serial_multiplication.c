@@ -4,14 +4,6 @@
 #include <stdlib.h>
 
 
-int ID = -1;
-
-
-
-
-
-
-
 /**
 * merges removing duplicates
 * returns number of duplicates that were removed while merging
@@ -39,7 +31,7 @@ int serial_merge_no_dup(long *a, long *b, long *c, long size_a, long size_b) {
         
         
         if (k >0){
-            if ( * (c+k) == *(c+k-1)){
+            if ( * (c+k) == *(c+k-1l)){
                 k--;
                 size_c--;
                 duplicates++;
@@ -54,7 +46,7 @@ int serial_merge_no_dup(long *a, long *b, long *c, long size_a, long size_b) {
             b_j = *(b+j);
             *(c+k) = b_j;
             if (k >0){
-                if (*(c+k) == *(c+k-1)){
+                if (*(c+k) == *(c+k-1l)){
                     k--;
                     size_c--;
                     duplicates++;
@@ -67,7 +59,7 @@ int serial_merge_no_dup(long *a, long *b, long *c, long size_a, long size_b) {
             a_i = *(a+i);
             *(c+k) = a_i;
             if (k >0){
-                if (*(c+k) == *(c+k-1)){
+                if (*(c+k) == *(c+k-1l)){
                     k--;
                     size_c--;
                     duplicates++;
@@ -86,13 +78,13 @@ int serial_merge_no_dup(long *a, long *b, long *c, long size_a, long size_b) {
 i = floor ( sqrt(index*2)+1/2)
 j = index - (i*i-i)/2
 */
-int get_array(long start, long end, long** buffer){
+long get_array(long start, long end, long** buffer){
     
     
   
     long size = end - start;
-    int newsize = 0;
-    int col,row;
+    long newsize = 0;
+    long col,row;
     long *temp1 ;
     long *temp2 ;
     
@@ -103,15 +95,15 @@ int get_array(long start, long end, long** buffer){
     long *temp = temp1;
     long *otemp = temp2;
     
-    int prev_end = -1;
+    long prev_end = -1;
     
-    int ind=start+1;
+    long ind=start+1;
     col = floor(sqrt(ind * 2) + 0.5);
     row = ind - (col * col - col) / 2;
     
     
     
-    for (int index = start; index < end; index++){
+    for (long index = start; index < end; index++){
          * (temp+index-start)= row * col;
         row++;
         if (row > col){
@@ -137,7 +129,7 @@ int get_array(long start, long end, long** buffer){
     }
     
     if (prev_end >= 1 && end  - start - prev_end > 0 ){  // merge this partial column with the previous merge
-        int index = end-1;
+        long index = end-1;
       
         
         int dup= serial_merge_no_dup(temp, temp+prev_end,otemp,prev_end,index - start-prev_end+ 1);
