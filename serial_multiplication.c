@@ -213,21 +213,7 @@ int main(int argc, char *argv[]) {
    // printf("Process %d has array, start:%d, end:%d, size:%d, newsize:%d, n:%d \n", id, start, end,partition_size,newsize, n );
     
     
-    char filename[100] ;
     
-    sprintf(filename, "log2_%d.txt", id);
-    FILE *f = fopen(filename, "w");
-    
-    for (int c = 0; c < newsize; c++){
-        fprintf(f,"%d ", a[c]);
-        
-    }
-    fclose(f); 
-   
-    
-    
-    
-
     int height, process, proc_recv;
     long mergesize, size2;
     long *a2;
