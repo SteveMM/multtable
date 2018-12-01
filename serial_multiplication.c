@@ -136,7 +136,7 @@ int get_array(long start, long end, long* buffer){
         
     }
     
-    if (prev_end > 1 && end  - start - prev_end > 0 ){  // merge this partial column with the previous merge
+    if (prev_end >= 1 && end  - start - prev_end > 0 ){  // merge this partial column with the previous merge
         int index = end-1;
       
         
