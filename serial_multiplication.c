@@ -3,6 +3,7 @@
 #include <mpi.h>
 #include <stdlib.h>
 
+int ID = -1;
 
 /**
 * merges removing duplicates
@@ -91,6 +92,12 @@ long get_array(long start, long end, long** buffer){
     temp1 = malloc(sizeof(long)*size);
     temp2 = malloc(sizeof(long)*size);
     
+    if (temp1 == NULL || temp2 == NULL){
+        fprintf (stderr,"ran out of memory on process %d\n", ID);
+        fflush(stderr);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+        return -1;
+    }
     
     long *temp = temp1;
     long *otemp = temp2;
@@ -169,7 +176,9 @@ int main(int argc, char *argv[]) {
 
     MPI_Comm_rank(MPI_COMM_WORLD, &id);
     MPI_Comm_size(MPI_COMM_WORLD, &p);
-
+    
+    ID = id;
+   
     long n = atol(argv[1]);
 
     num_upper_tri = (n*n-n)/2+n;
