@@ -177,7 +177,7 @@ int main(int argc, char *argv[]) {
 
     // for each process, calculate their start, range, sort and remove duplicates
     partition_size = num_upper_tri/p;
-    start = p*partition_size;
+    start = id*partition_size;
 
     a = malloc(sizeof(long) * partition_size);
 
