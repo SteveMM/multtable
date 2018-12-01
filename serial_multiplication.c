@@ -53,12 +53,26 @@ int serial_merge_no_dup(long *a, long *b, long *c, long size_a, long size_b) {
         for (; j < size_b; j++) {
             b_j = b[j];
             c[k] = b_j;
+            if (k >0){
+                if (c[k] == c[k-1]){
+                    k--;
+                    size_c--;
+                    duplicates++;
+                }
+            }
             k++;
         }
     } else if (j >= size_b) {
         for (; i < size_a; i++) {
             a_i = a[i];
             c[k] = a_i;
+            if (k >0){
+                if (c[k] == c[k-1]){
+                    k--;
+                    size_c--;
+                    duplicates++;
+                }
+            }
             k++;
         }
     }
