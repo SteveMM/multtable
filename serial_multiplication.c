@@ -5,19 +5,27 @@
 #include <time.h>
 #include <string.h>
 #include <sys/time.h>
+#include <assert.h>
+
+
+#define  ull unsigned long long
 
 int ID = -1;
 
-int BITS_PER_LL = sizeof(long long) * 8;
+int BITS_PER_LL = sizeof(ull) * 8;
+
+ull MX_BIT = 0;
+ull MX_LONG = 0;
+
 
 
 /**
 * merges removing duplicates
 * returns number of duplicates that were removed while merging
 */
-void merge_bit_lists(long long *a, long long *b,long long n_longs ) {
+void merge_bit_lists(ull *a, ull *b,ull n_longs ) {
     
-	for (long long i = 0; i < n_longs; i++){
+	for (ull i = 0; i < n_longs; i++){
 	
 		* (a+i) |= *(b+i);
 		
@@ -27,12 +35,20 @@ void merge_bit_lists(long long *a, long long *b,long long n_longs ) {
 }
 
 
-void set_bit( long long * buffer, long long value){
+void set_bit( ull * buffer, ull value){
 	
-	long long l = value / BITS_PER_LL;
-	long long b = value % BITS_PER_LL;
+	assert ( value < MX_BIT);
 	
-	long long mask = 1;
+	ull l = value / BITS_PER_LL;
+	ull b = value % BITS_PER_LL;
+	
+	if (l >= MX_LONG){
+		fprintf(stderr, "***l:%lli max:%lli \n", l, MX_LONG);
+		fflush(stderr);
+	}
+	//assert (l < MX_LONG);
+	
+	ull mask = 1;
 	
 	mask <<= b;
 	
@@ -46,31 +62,31 @@ void set_bit( long long * buffer, long long value){
 i = floor ( sqrt(index*2)+1/2)
 j = index - (i*i-i)/2
 */
-long long get_bit_list(long long start, long long end, long long* buffer){
+ull get_bit_list(ull start, ull end, ull* buffer){
     
     
   
-    long long size = end - start;
-    long long newsize = 0;
-    long long col,row;
-    long long *temp1 ;
-    long long *temp2 ;
+    ull size = end - start;
+    ull newsize = 0;
+    ull col,row;
+    ull *temp1 ;
+    ull *temp2 ;
     
 	
-    long long count = 0;
+    ull count = 0;
 
     
-    long long ind=start+1;
-    col = floor(sqrt(ind * 2) + 0.5);
+    ull ind=start+1;
+    col = floor(sqrt(ind * 2) + 0.5d);
     row = ind - (col * col - col) / 2;
 	
 	
-	fprintf(stderr,"ID:%d, col:%lli , row%lli \n", ID,col, row);
+	//fprintf(stderr,"ID:%d, starting at col:%lli , row:%lli \n", ID,col, row);
     
   
     
-    for (long long index = start; index < end; index++){
-        long long value = row* col;
+    for (ull index = start; index < end; index++){
+        ull value = row* col;
 		count ++;
 		
 					
@@ -89,7 +105,7 @@ long long get_bit_list(long long start, long long end, long long* buffer){
         
     }
 	
-	fprintf(stderr,"ID:%d, col:%lli , row%lli \n", ID,col, row);
+	//fprintf(stderr,"ID:%d, finished at 1 before col:%lli , row:%lli \n", ID,col, row);
     
 	
 	return count;
@@ -97,15 +113,16 @@ long long get_bit_list(long long start, long long end, long long* buffer){
 }
 
 
-long long count_bits (long long *buffer, long long n_longs){
+ull count_bits (ull *buffer, ull n_longs){
 	
-	long long count = 0;
+	ull count = 0;
 	
-	for (long long i = 0; i < n_longs; i++){
-		long long l = *(buffer+i);
-		for (long long i2 = 0; i2 < BITS_PER_LL; i2 ++){
-			count += (l & 1);
-			l >>=1;
+	for (ull i = 0; i < n_longs; i++){
+		ull ll = *(buffer+i);
+		while (ll >0){
+		//for (ull i2 = 0; i2 < BITS_PER_LL; i2 ++){
+			count += (ll & 1);
+			ll >>=1;
 			
 		}
 		
@@ -124,8 +141,8 @@ int main(int argc, char *argv[]) {
 
     MPI_Status status;
 
-    long long start, end, partition_size, num_upper_tri;
-    long long *a;
+    ull start, end, partition_size, num_upper_tri;
+    ull *a;
     int id, p;
 
     MPI_Comm_rank(MPI_COMM_WORLD, &id);
@@ -141,7 +158,7 @@ int main(int argc, char *argv[]) {
     
     ID = id;
    
-    long long n = atol(argv[1]);
+    ull n = atol(argv[1]);
 
     num_upper_tri = (n*n-n)/2+n;
 
@@ -158,28 +175,35 @@ int main(int argc, char *argv[]) {
         end = start + partition_size;
     }
     
-    long long newsize = end-start;
+    ull newsize = end-start;
 	
 	
 	
-	long long n_bits = n*n+1;
-	long long n_longs = n_bits / BITS_PER_LL;
+	ull n_bits = n*n+1;
+	ull n_longs = n_bits / BITS_PER_LL;
+	
+	
+	MX_BIT = n_bits;
+	
 	
 	if ((n_bits  %BITS_PER_LL ) >0){
 		n_longs++;
 	}
+	
+	MX_LONG = n_longs;
+	
 	fprintf( stderr,"ID:%d, generating size:%lli (%lli bits)\n", ID, n_longs, n_bits);
 	
-	a = malloc ( sizeof(long long) * n_longs);
+	a = malloc ( sizeof(ull) * n_longs);
 	
-    memset(a, 0, sizeof(long long)*n_longs );
+    memset(a, 0, sizeof(ull)*n_longs );
 	
 	
-	long long *b;
+	ull *b;
 
-    b = malloc ( sizeof(long long) * n_longs);
+    b = malloc ( sizeof(ull) * n_longs);
 	
-    memset(b, 0, sizeof(long long)*n_longs );
+    memset(b, 0, sizeof(ull)*n_longs );
     
 	
 	fflush(stderr);
@@ -187,7 +211,7 @@ int main(int argc, char *argv[]) {
 	
 	 
 	
-    long long count = get_bit_list(start, end, a);
+    ull count = get_bit_list(start, end, a);
 
    
 	//fprintf( stderr,"ID:%d, generated, count:%lli, start:%lli, end%lli\n", ID,count_bits(a,n_longs), i_start, i_end);
@@ -220,33 +244,24 @@ int main(int argc, char *argv[]) {
                 proc_recv = process+j;
 				
 			     
-                MPI_Recv(b, n_longs, MPI_LONG_LONG, proc_recv, 3, MPI_COMM_WORLD, &status);
-               fprintf(stderr, "Process %d recieved %d longs, tag 2 \n", ID, n_longs);
+                MPI_Recv(b, n_longs, MPI_UNSIGNED_LONG_LONG, proc_recv, 3, MPI_COMM_WORLD, &status);
+                fprintf(stderr, "Process %d recieved %d longs, tag 2 \n", ID, n_longs);
                 fflush(stderr);
                 
-                /*
-                // merge the 2 arrays, sort, remove duplicates
-                newa = malloc(sizeof(long) * size2);
-                serial_merge(&a[0], &a2[0], &newa, newsize, mergesize);
-                newsize=find_dups(size2,newa);
-                */
+              
                 merge_bit_lists(a, b, n_longs);
                 
 				   
                 
-                /*a = malloc(sizeof(long) * size2);
-                for(int k = 0; k < newsize; k++){
-                    a[k] = newa[k];
-                }*/
+                
 
             }else if(id == (process+j)) {
                 fprintf(stderr,"Process %d sends to process %d at height %d of height %d \n", ID, j, i, height);
                 fflush(stderr);
                 
 				
-				merge_bit_lists(a, b, n_longs);
-                
-                MPI_Send(a, n_longs, MPI_LONG_LONG, j, 3, MPI_COMM_WORLD);
+				 
+                MPI_Send(a, n_longs, MPI_UNSIGNED_LONG_LONG, j, 3, MPI_COMM_WORLD);
             }
         }
     }
@@ -257,7 +272,7 @@ int main(int argc, char *argv[]) {
     if(id == 0){
 		
 		
-		long long count = count_bits (a, n_longs);
+		ull count = count_bits (a, n_longs);
         
         printf("M(%lli) = %lli\n", n, count);
         gettimeofday(&stop_time, NULL);
