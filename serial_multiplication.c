@@ -15,9 +15,9 @@ int BITS_PER_LL = sizeof(long long) * 8;
 * merges removing duplicates
 * returns number of duplicates that were removed while merging
 */
-void merge_bit_lists(long long *a, long long *b,long long i_start, long long i_end ) {
+void merge_bit_lists(long long *a, long long *b,long long n_longs ) {
     
-	for (long long i = i_start; i <= i_end; i++){
+	for (long long i = 0; i < n_longs; i++){
 	
 		* (a+i) |= *(b+i);
 		
@@ -46,7 +46,7 @@ void set_bit( long long * buffer, long long value){
 i = floor ( sqrt(index*2)+1/2)
 j = index - (i*i-i)/2
 */
-long long get_bit_list(long long start, long long end, long long* buffer, long long *i_start, long long *i_end){
+long long get_bit_list(long long start, long long end, long long* buffer){
     
     
   
@@ -63,20 +63,18 @@ long long get_bit_list(long long start, long long end, long long* buffer, long l
     long long ind=start+1;
     col = floor(sqrt(ind * 2) + 0.5);
     row = ind - (col * col - col) / 2;
+	
+	
+	fprintf(stderr,"ID:%d, col:%lli , row%lli \n", ID,col, row);
     
-    long long minv = row*col;
-	long long maxv = minv;
+  
     
     for (long long index = start; index < end; index++){
         long long value = row* col;
 		count ++;
 		
-		if (value < minv){
-			minv = value;
-		}			
-		if (value > maxv){
-			maxv = value;
-		}
+					
+		
 		
 		set_bit(buffer, row * col);
         row++;
@@ -91,14 +89,9 @@ long long get_bit_list(long long start, long long end, long long* buffer, long l
         
     }
 	
-	maxv+= 1;
+	fprintf(stderr,"ID:%d, col:%lli , row%lli \n", ID,col, row);
+    
 	
-	*i_start = minv / BITS_PER_LL;
-	
-    *i_end = maxv / BITS_PER_LL;
-	if ((maxv % BITS_PER_LL) > 0){
-		(*i_end)+= 1;
-	}
 	return count;
     
 }
@@ -192,14 +185,13 @@ int main(int argc, char *argv[]) {
 	fflush(stderr);
 	
 	
-	long long i_start, i_end;
-    
+	 
 	
-    long long count = get_bit_list(start, end, a,&i_start, &i_end);
+    long long count = get_bit_list(start, end, a);
 
    
 	//fprintf( stderr,"ID:%d, generated, count:%lli, start:%lli, end%lli\n", ID,count_bits(a,n_longs), i_start, i_end);
-	fprintf( stderr,"ID:%d, generated, count:%lli, start:%lli, end%lli\n", ID,count, i_start, i_end);
+	fprintf( stderr,"ID:%d, generated, count:%lli, start:%lli, end:%lli\n", ID,count, start, end);
     fflush(stderr);
     
    // printf("Process %d has array, start:%d, end:%d, size:%d, newsize:%d, n:%d \n", id, start, end,partition_size,newsize, n );
@@ -214,8 +206,7 @@ int main(int argc, char *argv[]) {
     height = log2(p);
 
 	
-	long long i_start2, i_end2;
-   
+	
     for (int i = 0; i < height; i++){
          MPI_Barrier(MPI_COMM_WORLD);
 
@@ -228,12 +219,9 @@ int main(int argc, char *argv[]) {
                 
                 proc_recv = process+j;
 				
-				MPI_Recv(&i_start2, 1, MPI_LONG_LONG, proc_recv, 1, MPI_COMM_WORLD, &status);
-				
-				MPI_Recv(&i_end2, 1, MPI_LONG_LONG, proc_recv, 2, MPI_COMM_WORLD, &status);
-                
-                MPI_Recv(b+i_start2, i_end2 - i_start2, MPI_LONG_LONG, proc_recv, 3, MPI_COMM_WORLD, &status);
-               fprintf(stderr, "Process %d recieved %d longs, tag 2 \n", ID, i_end2 - i_start2);
+			     
+                MPI_Recv(b, n_longs, MPI_LONG_LONG, proc_recv, 3, MPI_COMM_WORLD, &status);
+               fprintf(stderr, "Process %d recieved %d longs, tag 2 \n", ID, n_longs);
                 fflush(stderr);
                 
                 /*
@@ -242,15 +230,9 @@ int main(int argc, char *argv[]) {
                 serial_merge(&a[0], &a2[0], &newa, newsize, mergesize);
                 newsize=find_dups(size2,newa);
                 */
-                merge_bit_lists(a, b, i_start2, i_end2);
+                merge_bit_lists(a, b, n_longs);
                 
-				if (i_start2 < i_start){
-					i_start = i_start2;
-				}
-                if (i_end2 > i_end){
-					i_end = i_end2;
-				}
-                
+				   
                 
                 /*a = malloc(sizeof(long) * size2);
                 for(int k = 0; k < newsize; k++){
@@ -262,10 +244,9 @@ int main(int argc, char *argv[]) {
                 fflush(stderr);
                 
 				
-				MPI_Send(&i_start, 1, MPI_LONG_LONG, j, 1, MPI_COMM_WORLD);
-				MPI_Send(&i_end, 1, MPI_LONG_LONG, j, 2, MPI_COMM_WORLD);
-				
-                MPI_Send(a+i_start, i_end - i_start, MPI_LONG_LONG, j, 3, MPI_COMM_WORLD);
+				merge_bit_lists(a, b, n_longs);
+                
+                MPI_Send(a, n_longs, MPI_LONG_LONG, j, 3, MPI_COMM_WORLD);
             }
         }
     }
@@ -285,7 +266,8 @@ int main(int argc, char *argv[]) {
         double took = tl;
         
         if (tls >0){
-            took = tls;
+			took /= 1e6;
+            took += tls;
             
             
                     if (took > 60){
