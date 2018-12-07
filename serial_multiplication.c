@@ -51,13 +51,13 @@ ull *allocate_and_clear(ull n_longs) {
  /**
  * generates the bit list for this processor with the specified range
  */
-void get_bit_list(ull start, ull end, ull* buffer) {
+void get_bit_list(ull register start, ull register end, ull register *buffer) {
 
-	ull col, row;
-
+	ull register col, row;
+	
 	col = 1;
 	row = 1;
-
+		
 	// go to starting position of this process' range
 	for (ull register index = 0; index < start; index++) {
 		row++;
@@ -77,19 +77,15 @@ void get_bit_list(ull start, ull end, ull* buffer) {
 	 row /= 2;
 	 row = ind - row;
 	 */
-
+	
 	for (ull register index = start; index < end; index++) {
-
 		set_bit(buffer, row * col);
 		row++;
 		if (row > col) {
 			row = 1;
 			col++;
-
 		}
-
 	}
-
 }
 /**
  * counts the number of high bits in the buffer
